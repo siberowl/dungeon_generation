@@ -8,6 +8,7 @@ class Room:
         self.right = right
         self.top = top
         self.bottom = bottom
+        self.corridor = None
         self.children = None
 
     def width(self):
@@ -30,13 +31,14 @@ class Room:
     def split(self):
         # between 1/3 to 2/3 original size
         divisor = random.uniform(1.5, 3)
-        midpoint = self.left + self.width() / divisor
-        room_a = Room(self.left, midpoint, self.top, self.bottom)
-        room_b = Room(midpoint, self.right, self.top, self.bottom)
+        h_midpoint = self.left + self.width() / divisor
+        v_midpoint = self.top + self.height() / divisor
+        room_a = Room(self.left, h_midpoint, self.top, self.bottom)
+        room_b = Room(h_midpoint, self.right, self.top, self.bottom)
+        self.corridor = (h_midpoint, v_midpoint)
         if self.height() > self.width():
-            midpoint = self.top + self.height() / divisor
-            room_a = Room(self.left, self.right, self.top, midpoint)
-            room_b = Room(self.left, self.right, midpoint, self.bottom)
+            room_a = Room(self.left, self.right, self.top, v_midpoint)
+            room_b = Room(self.left, self.right, v_midpoint, self.bottom)
         self.children = (room_a, room_b)
 
     def __repr__(self):
@@ -74,6 +76,7 @@ class Maze:
                         stdscr.addch(y, x, "=")
             stdscr.refresh()
             return
+        stdscr.addch(int(room.corridor[1]), int(room.corridor[0]), "#")
         self.recursive_draw(room.children[0])
         self.recursive_draw(room.children[1])
 
