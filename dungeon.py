@@ -66,9 +66,12 @@ class Maze:
     def recursive_draw(self, room):
         stdscr = curses.initscr()
         if room.is_leaf():
-            for x in range(int(room.left), int(room.right)):
-                for y in range(int(room.top), int(room.bottom)):
-                    stdscr.addch(y, x, "#")
+            for x in range(int(room.left), int(room.right) + 1):
+                for y in range(int(room.top), int(room.bottom) + 1):
+                    if x == int(room.left) or x == int(room.right):
+                        stdscr.addch(y, x, "|")
+                    if y == int(room.top) or y == int(room.bottom):
+                        stdscr.addch(y, x, "=")
             stdscr.refresh()
             return
         self.recursive_draw(room.children[0])
