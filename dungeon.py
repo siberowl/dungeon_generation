@@ -4,67 +4,77 @@ import random
 
 class Room:
     def __init__(self, left, right, top, bottom):
-        self.left, self.right, self.top, self.bottom = left, right, top, bottom
+        self.left = left
+        self.right = right
+        self.top = top
+        self.bottom = bottom
+        self.children = None
+
+    def width(self):
+        return self.right - self.left
+
+    def height(self):
+        return self.bottom - self.top
+
+    def trim(self, border):
+        self.left += border
+        self.right -= border
+        self.top += border
+        self.bottom -= border
+
+    def is_leaf(self):
+        if self.children is None:
+            return True
+        return False
 
     def split(self):
-        left, right, top, bottom = self.left, self.right, self.top, self.bottom
-        max = 5
-        rand = random.randint(2, max + 1)
-        direction = random.randint(0, 2)
-        if direction < 1:
-            room_a = Room(left, (left + right) / rand, top, bottom)
-            room_b = Room((left + right) / rand, right, top, bottom)
-        else:
-            room_a = Room(left, right, top, (top + bottom) / rand)
-            room_b = Room(left, right, (top + bottom) / rand, bottom)
-        return (room_a, room_b)
+        # between 1/3 to 2/3 original size
+        divisor = random.uniform(1.5, 3)
+        midpoint = self.left + self.width() / divisor
+        room_a = Room(self.left, midpoint, self.top, self.bottom)
+        room_b = Room(midpoint, self.right, self.top, self.bottom)
+        if self.height() > self.width():
+            midpoint = self.top + self.height() / divisor
+            room_a = Room(self.left, self.right, self.top, midpoint)
+            room_b = Room(self.left, self.right, midpoint, self.bottom)
+        self.children = (room_a, room_b)
 
     def __repr__(self):
-        return (
-            str(self.left)
-            + ","
-            + str(self.right)
-            + ","
-            + str(self.top)
-            + ","
-            + str(self.bottom)
-        )
+        return str(self.left) + "," + str(self.right) + "," + str(self.top) + "," + str(self.bottom)
 
 
-class Generator:
-    def __init__(self):
-        self.rooms = []
+class Maze:
+    def __init__(self, dimension):
+        self.dimension = dimension
+        self.room = Room(0, self.dimension[0], 0, self.dimension[1])
 
-    def generate(self, room, max_depth, depth):
+    def generate(self, max_depth):
+        self.recursive_gen(self.room, max_depth, 0)
+
+    def recursive_gen(self, room, max_depth, depth):
         if depth >= max_depth:
-            self.rooms.append(room)
+            room.trim(1)
             return
         depth += 1
-        rooms = room.split()
-        self.generate(rooms[0], max_depth, depth)
-        self.generate(rooms[1], max_depth, depth)
+        room.split()
+        self.recursive_gen(room.children[0], max_depth, depth)
+        self.recursive_gen(room.children[1], max_depth, depth)
 
-    def print(self):
-        for room in self.rooms:
-            print(str(room))
+    def draw(self):
+        self.recursive_draw(self.room)
 
-
-class Drawer:
-    def __init__(self, resolution):
-        self.resolution = resolution
-
-    def draw(self, rooms):
+    def recursive_draw(self, room):
         stdscr = curses.initscr()
-        for room in rooms:
-            r = self.resolution
-            for x in range(int(room.left / r), int(room.right / r) - 1):
-                for y in range(int(room.bottom / r), int(room.top / r) - 1):
+        if room.is_leaf():
+            for x in range(int(room.left), int(room.right)):
+                for y in range(int(room.top), int(room.bottom)):
                     stdscr.addch(y, x, "#")
-        stdscr.refresh()
+            stdscr.refresh()
+            return
+        self.recursive_draw(room.children[0])
+        self.recursive_draw(room.children[1])
 
 
-room = Room(0, 30, 10, 0)
-gen = Generator()
-gen.generate(room, 3, 0)
-dr = Drawer(0.25)
-dr.draw(gen.rooms)
+maze = Maze([100, 50])
+maze.generate(4)
+maze.draw()
